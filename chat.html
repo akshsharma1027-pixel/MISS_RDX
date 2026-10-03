@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Humari Private Chat 🔒</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0a0a0f;
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ============ PASSWORD SCREEN ============ */
+  .pass-screen {
+    position: fixed;
+    inset: 0;
+    background: #0a0a0f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    z-index: 2000;
+  }
+  .pass-card {
+    background: rgba(20, 20, 30, 0.9);
+    border: 1px solid rgba(255, 77, 121, 0.3);
+    border-radius: 25px;
+    padding: 45px 30px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7), 0 0 60px rgba(255, 77, 121, 0.15);
+    animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes popIn {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .pass-icon {
+    font-size: 70px;
+    margin-bottom: 15px;
+    animation: lockShake 3s infinite;
+    filter: drop-shadow(0 0 20px rgba(255, 77, 121, 0.8));
+  }
+  @keyframes lockShake {
+    0%, 90%, 100% { transform: rotate(0deg); }
+    93% { transform: rotate(-10deg); }
+    96% { transform: rotate(10deg); }
+  }
+  .pass-title {
+    color: #ff8fab;
+    font-size: 1.5em;
+    margin-bottom: 8px;
+  }
+  .pass-sub { color: #666688; font-size: 0.85em; margin-bottom: 25px; }
+
+  .pass-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px solid rgba(255, 77, 121, 0.3);
+    color: #fff;
+    padding: 15px 20px;
+    border-radius: 15px;
+    font-size: 1.1em;
+    font-family: inherit;
+    outline: none;
+    text-align: center;
+    letter-spacing: 3px;
+    transition: all 0.3s;
+    margin-bottom: 15px;
+  }
+  .pass-input:focus { border-color: #ff4d79; box-shadow: 0 0 25px rgba(255, 77, 121, 0.4); }
+  .pass-input.error {
+    border-color: #ff1744;
+    animation: shake 0.4s;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+  }
+  .pass-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #ff4d79, #e91e63);
+    border: none;
+    color: white;
+    border-radius: 15px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 8px 25px rgba(255, 77, 121, 0.4);
+  }
+  .pass-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(255, 77, 121, 0.7); }
+  .pass-error {
+    color: #ff1744;
+    font-size: 0.85em;
+    margin-top: 12px;
+    height: 18px;
+    transition: all 0.3s;
+  }
+
+  /* ============ SETUP SCREEN ============ */
+  .setup-screen {
+    position: fixed;
+    inset: 0;
+    background: #0a0a0f;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    z-index: 1500;
+  }
+  .setup-card {
+    background: rgba(20, 20, 30, 0.9);
+    border: 1px solid rgba(255, 77, 121, 0.3);
+    border-radius: 25px;
+    padding: 40px 30px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+  }
+  .setup-card h2 { color: #ff8fab; margin-bottom: 10px; }
+  .setup-card p { color: #666688; font-size: 0.9em; margin-bottom: 25px; line-height: 1.6; }
+  .setup-card input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 77, 121, 0.3);
+    color: #fff;
+    padding: 14px 20px;
+    border-radius: 15px;
+    font-size: 1em;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 15px;
+    transition: all 0.3s;
+  }
+  .setup-card input:focus { border-color: #ff4d79; box-shadow: 0 0 20px rgba(255, 77, 121, 0.3); }
+  .setup-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #ff4d79, #e91e63);
+    border: none;
+    color: white;
+    border-radius: 15px;
+    font-size: 1.05em;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* ============ CHAT SCREEN ============ */
+  .chat-screen {
+    display: none;
+    flex-direction: column;
+    height: 100vh;
+  }
+  .header {
+    background: rgba(20, 20, 30, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 77, 121, 0.2);
+  }
+  .header-info { display: flex; align-items: center; gap: 12px; }
+  .header-title { font-size: 1.05em; font-weight: 600; color: #ff8fab; }
+  .header-sub { font-size: 0.72em; color: #666688; margin-top: 2px; }
+  .online-dot {
+    width: 8px; height: 8px; background: #00e676; border-radius: 50%;
+    box-shadow: 0 0 10px #00e676; display: inline-block; margin-right: 5px;
+  }
+  .lock-btn {
+    background: rgba(255, 77, 121, 0.15);
+    border: 1px solid rgba(255, 77, 121, 0.4);
+    color: #ff8fab;
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.8em;
+    font-family: inherit;
+  }
+
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-image:
+      linear-gradient(rgba(255, 77, 121, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 77, 121, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+  .chat-area::-webkit-scrollbar { width: 5px; }
+  .chat-area::-webkit-scrollbar-thumb { background: rgba(255, 77, 121, 0.4); border-radius: 3px; }
+
+  /* Messages */
+  .msg-row { display: flex; animation: slideIn 0.3s ease; }
+  .msg-row.me { justify-content: flex-end; }
+  .msg-row.other { justify-content: flex-start; }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg {
+    max-width: 78%;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 0.95em;
+    line-height: 1.5;
+    word-wrap: break-word;
+    position: relative;
+  }
+  .msg.me {
+    background: linear-gradient(135deg, #ff4d79, #e91e63);
+    color: white;
+    border-bottom-right-radius: 5px;
+    box-shadow: 0 5px 20px rgba(255, 77, 121, 0.3);
+  }
+  .msg.other {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e0e0f0;
+    border-bottom-left-radius: 5px;
+  }
+  .msg .sender-name {
+    font-size: 0.7em;
+    color: #ff8fab;
+    margin-bottom: 3px;
+    font-weight: 600;
+  }
+  .msg .time {
+    font-size: 0.62em;
+    opacity: 0.7;
+    margin-top: 5px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+  }
+  .msg .seen {
+    color: #4fc3f7;
+    font-size: 0.9em;
+  }
+
+  /* Emoji bar */
+  .emoji-bar {
+    display: flex;
+    gap: 8px;
+    padding: 8px 15px;
+    background: rgba(20, 20, 30, 0.95);
+    border-top: 1px solid rgba(255, 77, 121, 0.15);
+    overflow-x: auto;
+  }
+  .emoji-bar::-webkit-scrollbar { display: none; }
+  .emoji-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.4em;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 10px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .emoji-btn:hover { background: rgba(255, 77, 121, 0.2); transform: scale(1.2); }
+
+  /* Input area */
+  .input-area {
+    padding: 12px 15px 15px;
+    background: rgba(20, 20, 30, 0.95);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .input-area input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 77, 121, 0.3);
+    color: #fff;
+    padding: 14px 20px;
+    border-radius: 25px;
+    font-size: 0.95em;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.3s;
+  }
+  .input-area input:focus { border-color: #ff4d79; box-shadow: 0 0 20px rgba(255, 77, 121, 0.3); }
+
+  .icon-btn {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 77, 121, 0.15);
+    border: 1px solid rgba(255, 77, 121, 0.3);
+    color: #ff8fab;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { background: rgba(255, 77, 121, 0.3); color: #fff; }
+
+  .send-btn {
+    background: linear-gradient(135deg, #ff4d79, #e91e63);
+    border: none;
+    color: white;
+    box-shadow: 0 5px 20px rgba(255, 77, 121, 0.4);
+  }
+  .send-btn:hover { transform: scale(1.1); }
+
+  /* Delete menu */
+  .msg-menu {
+    position: fixed;
+    background: rgba(30, 30, 45, 0.98);
+    border: 1px solid rgba(255, 77, 121, 0.4);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    z-index: 500;
+    display: none;
+  }
+  .msg-menu.show { display: block; animation: popIn 0.2s; }
+  .msg-menu button {
+    background: transparent;
+    border: none;
+    color: #ff8fab;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-family: inherit;
+    width: 100%;
+    text-align: left;
+    transition: all 0.2s;
+  }
+  .msg-menu button:hover { background: rgba(255, 77, 121, 0.2); color: #fff; }
+
+  @media (max-width: 480px) {
+    .msg { max-width: 85%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ PASSWORD SCREEN ============ -->
+<div class="pass-screen" id="passScreen">
+  <div class="pass-card">
+    <div class="pass-icon">🔒</div>
+    <div class="pass-title">Private Access</div>
+    <div class="pass-sub">Sirf hum dono ke liye 💕</div>
+    <input type="password" class="pass-input" id="passInput" placeholder="••••" maxlength="20"
+           onkeypress="if(event.key==='Enter') checkPass()">
+    <button class="pass-btn" onclick="checkPass()">Unlock 🔓</button>
+    <div class="pass-error" id="passError"></div>
+  </div>
+</div>
+
+<!-- ============ SETUP SCREEN ============ -->
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-card">
+    <div style="font-size: 60px; margin-bottom: 15px;">💌</div>
+    <h2>Chat Setup</h2>
+    <p>Apna naam aur Room ID daalo. Dono same Room ID daalenge tabhi chat judegi.</p>
+    <input type="text" id="myName" placeholder="Apna naam..." maxlength="20">
+    <input type="text" id="roomId" placeholder="Room ID (jaise: love123)" maxlength="30">
+    <button class="setup-btn" onclick="startChat()">Chat Shuru Karo 💕</button>
+  </div>
+</div>
+
+<!-- ============ CHAT SCREEN ============ -->
+<div class="chat-screen" id="chatScreen">
+  <div class="header">
+    <div class="header-info">
+      <div style="font-size: 22px;">🔒</div>
+      <div>
+        <div class="header-title" id="displayRoomName">Humari Chat</div>
+        <div class="header-sub"><span class="online-dot"></span>Private Room</div>
+      </div>
+    </div>
+    <button class="lock-btn" onclick="lockChat()">🔒 Lock</button>
+  </div>
+
+  <div class="chat-area" id="chatArea"></div>
+
+  <div class="emoji-bar">
+    <button class="emoji-btn" onclick="addEmoji('❤️')">❤️</button>
+    <button class="emoji-btn" onclick="addEmoji('😘')">😘</button>
+    <button class="emoji-btn" onclick="addEmoji('🥰')">🥰</button>
+    <button class="emoji-btn" onclick="addEmoji('😍')">😍</button>
+    <button class="emoji-btn" onclick="addEmoji('😂')">😂</button>
+    <button class="emoji-btn" onclick="addEmoji('🥺')">🥺</button>
+    <button class="emoji-btn" onclick="addEmoji('😭')">😭</button>
+    <button class="emoji-btn" onclick="addEmoji('🌹')">🌹</button>
+    <button class="emoji-btn" onclick="addEmoji('💕')">💕</button>
+    <button class="emoji-btn" onclick="addEmoji('🔥')">🔥</button>
+    <button class="emoji-btn" onclick="addEmoji('👍')">👍</button>
+    <button class="emoji-btn" onclick="addEmoji('🙈')">🙈</button>
+  </div>
+
+  <div class="input-area">
+    <input type="text" id="msgInput" placeholder="Message likho..." onkeypress="if(event.key==='Enter') sendMsg()">
+    <button class="icon-btn send-btn" onclick="sendMsg()">➤</button>
+  </div>
+</div>
+
+<!-- Delete menu -->
+<div class="msg-menu" id="msgMenu">
+  <button onclick="deleteMsg()">🗑️ Delete</button>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded, onChildRemoved, remove, query, limitToLast, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  /* ============================================
+     ⚙️ STEP 1: Firebase config paste karo
+     ============================================ */
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  /* ============================================
+     🔑 STEP 2: Apna password yaha set karo
+     ============================================ */
+  const SECRET_PASSWORD = "mylove123";   // 👈 Yaha apna password daalo
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  let myName = "";
+  let currentRoom = "";
+  let chatRef = null;
+  let selectedMsgKey = null;
+  let msgElements = {};
+
+  /* ---------- PASSWORD CHECK ---------- */
+  window.checkPass = function() {
+    const input = document.getElementById('passInput');
+    const errorEl = document.getElementById('passError');
+    const entered = input.value;
+
+    if (entered === SECRET_PASSWORD) {
+      errorEl.style.color = '#00e676';
+      errorEl.textContent = '✓ Unlocked!';
+      setTimeout(() => {
+        document.getElementById('passScreen').style.display = 'none';
+        // Agar pehle se saved hai to direct chat kholo
+        const savedName = localStorage.getItem('chatName');
+        const savedRoom = localStorage.getItem('chatRoom');
+        if (savedName && savedRoom) {
+          document.getElementById('myName').value = savedName;
+          document.getElementById('roomId').value = savedRoom;
+          startChat();
+        } else {
+          document.getElementById('setupScreen').style.display = 'flex';
+        }
+      }, 400);
+    } else {
+      errorEl.style.color = '#ff1744';
+      errorEl.textContent = '✗ Galat password!';
+      input.classList.add('error');
+      input.value = '';
+      if (navigator.vibrate) navigator.vibrate(200);
+      setTimeout(() => input.classList.remove('error'), 500);
+    }
+  };
+
+  /* ---------- START CHAT ---------- */
+  window.startChat = function() {
+    myName = document.getElementById('myName').value.trim();
+    currentRoom = document.getElementById('roomId').value.trim();
+
+    if (!myName || !currentRoom) {
+      alert('Dono fields bharo bhai! 😅');
+      return;
+    }
+
+    localStorage.setItem('chatName', myName);
+    localStorage.setItem('chatRoom', currentRoom);
+
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('chatScreen').style.display = 'flex';
+    document.getElementById('displayRoomName').textContent = 'Room: ' + currentRoom;
+
+    chatRef = ref(db, 'rooms/' + currentRoom + '/messages');
+    const q = query(chatRef, limitToLast(100));
+
+    // Naye messages aayenge
+    onChildAdded(q, (snapshot) => {
+      const data = snapshot.val();
+      const key = snapshot.key;
+      if (data && !msgElements[key]) {
+        addMessage(key, data);
+      }
+    });
+
+    // Delete hone wale messages
+    onChildRemoved(q, (snapshot) => {
+      const key = snapshot.key;
+      if (msgElements[key]) {
+        msgElements[key].remove();
+        delete msgElements[key];
+      }
+    });
+  };
+
+  /* ---------- SEND MESSAGE ---------- */
+  window.sendMsg = function() {
+    const input = document.getElementById('msgInput');
+    const text = input.value.trim();
+    if (!text || !chatRef) return;
+
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+    push(chatRef, {
+      name: myName,
+      text: text,
+      time: timeStr,
+      timestamp: Date.now()
+    });
+
+    input.value = '';
+    input.focus();
+  };
+
+  /* ---------- EMOJI ADD ---------- */
+  window.addEmoji = function(emoji) {
+    const input = document.getElementById('msgInput');
+    input.value += emoji;
+    input.focus();
+  };
+
+  /* ---------- ADD MESSAGE TO UI ---------- */
+  function addMessage(key, data) {
+    const area = document.getElementById('chatArea');
+    const isMe = data.name === myName;
+
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + (isMe ? 'me' : 'other');
+
+    const msg = document.createElement('div');
+    msg.className = 'msg ' + (isMe ? 'me' : 'other');
+
+    msg.innerHTML = `
+      ${!isMe ? `<div class="sender-name">${escapeHtml(data.name)}</div>` : ''}
+      <div>${escapeHtml(data.text)}</div>
+      <div class="time">${data.time} ${isMe ? '<span class="seen">✓✓</span>' : ''}</div>
+    `;
+
+    // Long press to delete (only own messages)
+    if (isMe) {
+      let pressTimer;
+      msg.addEventListener('touchstart', (e) => {
+        pressTimer = setTimeout(() => {
+          e.preventDefault();
+          showMsgMenu(key, e.touches[0].clientX, e.touches[0].clientY);
+        }, 600);
+      });
+      msg.addEventListener('touchend', () => clearTimeout(pressTimer));
+      msg.addEventListener('mousedown', (e) => {
+        pressTimer = setTimeout(() => {
+          showMsgMenu(key, e.clientX, e.clientY);
+        }, 600);
+      });
+      msg.addEventListener('mouseup', () => clearTimeout(pressTimer));
+      msg.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+    }
+
+    row.appendChild(msg);
+    area.appendChild(row);
+    area.scrollTop = area.scrollHeight;
+    msgElements[key] = row;
+  }
+
+  /* ---------- MESSAGE MENU ---------- */
+  window.showMsgMenu = function(key, x, y) {
+    selectedMsgKey = key;
+    const menu = document.getElementById('msgMenu');
+    menu.style.left = Math.min(x, window.innerWidth - 150) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - 80) + 'px';
+    menu.classList.add('show');
+  };
+
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('msgMenu');
+    if (!menu.contains(e.target) && !e.target.closest('.msg')) {
+      menu.classList.remove('show');
+    }
+  });
+
+  window.deleteMsg = function() {
+    if (!selectedMsgKey || !chatRef) return;
+    remove(ref(db, 'rooms/' + currentRoom + '/messages/' + selectedMsgKey));
+    document.getElementById('msgMenu').classList.remove('show');
+    selectedMsgKey = null;
+  };
+
+  /* ---------- LOCK ---------- */
+  window.lockChat = function() {
+    localStorage.removeItem('chatName');
+    localStorage.removeItem('chatRoom');
+    location.reload();
+  };
+
+  /* ---------- HELPER ---------- */
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>
